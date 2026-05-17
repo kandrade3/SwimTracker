@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwimTrack — Instructor Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Ocean background -->
+<div class="ocean-bg" id="oceanBg">
+  <div class="wave wave-1"><svg viewBox="0 0 1200 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,50 C150,90 350,10 600,50 C850,90 1050,10 1200,50 L1200,100 L0,100 Z" fill="#00c4cc"/></svg></div>
+  <div class="wave wave-2"><svg viewBox="0 0 1200 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,60 C200,20 400,80 600,60 C800,40 1000,80 1200,60 L1200,100 L0,100 Z" fill="#1e6fa8"/></svg></div>
+  <div class="wave wave-3"><svg viewBox="0 0 1200 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,40 C100,70 300,20 500,40 C700,60 900,20 1200,40 L1200,100 L0,100 Z" fill="#00e5ee"/></svg></div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading...</div>
+</div>
+
+<!-- ===== LANDING PAGE ===== -->
+<div class="screen" id="landing">
+  <div class="hero">
+    <span class="wave-icon">🌊</span>
+    <div class="logo">SwimTrack</div>
+    <div class="tagline">Instructor Portal — Student Progress Management</div>
+  </div>
+  <div class="landing-cards">
+    <div class="landing-card" onclick="showScreen('registerScreen')">
+      <span class="icon">🏊</span>
+      <h3>New Instructor</h3>
+      <p>Create your account and set up your student tracking portal</p>
+    </div>
+    <div class="landing-card" onclick="showScreen('loginScreen')">
+      <span class="icon">🔑</span>
+      <h3>Existing Instructor</h3>
+      <p>Sign in to your portal to manage students and track progress</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REGISTER SCREEN ===== -->
+<div class="screen hidden" id="registerScreen">
+  <button class="btn btn-ghost btn-sm back-btn" onclick="showScreen('landing')">← Back</button>
+  <div class="form-screen">
+    <div class="card">
+      <div class="form-title">Create Account</div>
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="regName" placeholder="e.g. Jordan Miller">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="text" id="regEmail" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="regPassword" placeholder="Choose a password (6+ chars)">
+      </div>
+      <button class="btn btn-primary btn-full mt-3" onclick="register()">Create My Portal →</button>
+      <p class="text-dim mt-2" style="text-align:center">Already have an account? <a href="#" onclick="showScreen('loginScreen')" style="color:var(--aqua)">Sign in</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div class="screen hidden" id="loginScreen">
+  <button class="btn btn-ghost btn-sm back-btn" onclick="showScreen('landing')">← Back</button>
+  <div class="form-screen">
+    <div class="card">
+      <div class="form-title">Welcome Back</div>
+      <div class="field">
+        <label>Email</label>
+        <input type="text" id="loginEmail" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Your password" onkeydown="if(event.key==='Enter')login()">
+      </div>
+      <button class="btn btn-primary btn-full mt-3" onclick="login()">Sign In →</button>
+      <p class="text-dim mt-2" style="text-align:center">New instructor? <a href="#" onclick="showScreen('registerScreen')" style="color:var(--aqua)">Create account</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="dashboard" style="display:none; position:relative; z-index:1; padding: 80px 24px 24px; max-width:1100px; margin:0 auto; width:100%; flex-direction:column;">
+  <button class="btn btn-ghost btn-sm back-btn" onclick="logout()">← Sign Out</button>
+
+  <div class="dash-header">
+    <div>
+      <div class="dash-title">Hello, <span id="dashInstructorName">Instructor</span> 👋</div>
+      <div class="text-dim">Manage your students and swim levels</div>
+    </div>
+    <div class="dash-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openTab('levelsTab')">⚙ Manage Levels</button>
+      <button class="btn btn-primary" onclick="openAddStudentModal()">+ Add Student</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" id="tab-studentsTab" onclick="openTab('studentsTab')">Students Board</div>
+    <div class="tab" id="tab-levelsTab" onclick="openTab('levelsTab')">Swim Levels</div>
+  </div>
+
+  <!-- Students Tab -->
+  <div id="studentsTab">
+    <div class="board" id="studentBoard"></div>
+  </div>
+
+  <!-- Levels Tab -->
+  <div id="levelsTab" class="hidden">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div>
+        <div style="font-family:'Playfair Display',serif; font-size:1.2rem; margin-bottom:4px;">Swim Levels</div>
+        <div class="text-dim">Drag to reorder · Click to edit</div>
+      </div>
+      <button class="btn btn-primary" onclick="openAddLevelModal()">+ Add Level</button>
+    </div>
+    <div class="levels-list" id="levelsList"></div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="addStudentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Student</div>
+      <button class="modal-close" onclick="closeModal('addStudentModal')">×</button>
+    </div>
+    <div class="field">
+      <label>Student Name</label>
+      <input type="text" id="studentName" placeholder="Full name">
+    </div>
+    <div class="field">
+      <label>Age (optional)</label>
+      <input type="text" id="studentAge" placeholder="e.g. 8">
+    </div>
+    <div class="field">
+      <label>Assign to Level</label>
+      <select id="studentLevel"></select>
+    </div>
+    <div class="field">
+      <label>Initial Notes (optional)</label>
+      <textarea id="studentNotes" placeholder="Any starting notes..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addStudentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addStudent()">Add Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- Student Detail Modal -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalStudentName">Student Name</div>
+      <button class="modal-close" onclick="closeModal('studentModal')">×</button>
+    </div>
+    <div class="flex gap-2" style="flex-wrap:wrap; margin-bottom:16px;" id="studentModalMeta"></div>
+    <div class="field">
+      <label>Move to Level</label>
+      <select id="studentLevelChange" onchange="changeStudentLevel()"></select>
+    </div>
+    <hr class="divider">
+    <div style="font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+      📝 Comments <span id="commentCount" class="comment-badge"></span>
+    </div>
+    <div class="comments-list" id="commentsList"></div>
+    <div class="field">
+      <label>Add a Comment</label>
+      <textarea id="newComment" placeholder="Progress notes, observations, goals..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" onclick="deleteStudent()">Remove Student</button>
+      <button class="btn btn-ghost" onclick="closeModal('studentModal')">Close</button>
+      <button class="btn btn-primary" onclick="addComment()">Save Comment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Level Modal -->
+<div class="modal-overlay" id="levelModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="levelModalTitle">Add Level</div>
+      <button class="modal-close" onclick="closeModal('levelModal')">×</button>
+    </div>
+    <div class="field">
+      <label>Level Name</label>
+      <input type="text" id="levelName" placeholder="e.g. Beginner, Stroke Development, Advanced...">
+    </div>
+    <div class="field">
+      <label>Description (optional)</label>
+      <textarea id="levelDesc" placeholder="What skills does this level cover?"></textarea>
+    </div>
+    <input type="hidden" id="editingLevelId">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('levelModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLevel()">Save Level</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDKs (v9 compat mode - works with plain JS, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script src="app.js"></script>
+</body>
+</html>
