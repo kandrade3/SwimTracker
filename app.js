@@ -8,15 +8,13 @@
 // Replace these values with your own project's config.
 // Get them from: Firebase Console → Project Settings → Your Apps → Web App
 // ─────────────────────────────────────
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDqdqkO2t4CReWNlFoXHS1YxB80nEKV4WA",
-  authDomain: "swimtrackr-27070.firebaseapp.com",
-  projectId: "swimtrackr-27070",
-  storageBucket: "swimtrackr-27070.firebasestorage.app",
-  messagingSenderId: "203011812234",
-  appId: "1:203011812234:web:7b94a23eeb3c2bfb73b673",
-  measurementId: "G-3SB34TWVVR"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 // Initialize Firebase
@@ -203,8 +201,8 @@ function openTab(tabId) {
 // RENDER — STUDENTS BOARD
 // ─────────────────────────────────────
 function renderBoard() {
-  const board   = document.getElementById('studentBoard');
-  const levels  = instructorDoc.levels  || [];
+  const board    = document.getElementById('studentBoard');
+  const levels   = instructorDoc.levels   || [];
   const students = instructorDoc.students || [];
 
   if (!levels.length) {
@@ -212,35 +210,32 @@ function renderBoard() {
     return;
   }
 
-  board.innerHTML = levels.map(level => {
-    const lvlStudents = students.filter(s => s.levelId === level.id);
-    return `
-      <div class="level-col">
-        <div class="level-col-header">
-          <span class="level-name">${esc(level.name)}</span>
-          <span class="level-count">${lvlStudents.length}</span>
-        </div>
-        <div class="level-students">
-          ${lvlStudents.length
-            ? lvlStudents.map(s => studentCardHTML(s)).join('')
-            : '<div class="text-dim" style="font-size:0.8rem;padding:8px 4px">No students yet</div>'}
-        </div>
-      </div>`;
-  }).join('');
-
-  // Unassigned students (level was deleted)
   const levelIds   = levels.map(l => l.id);
   const unassigned = students.filter(s => !levelIds.includes(s.levelId));
-  if (unassigned.length) {
-    board.innerHTML += `
-      <div class="level-col">
-        <div class="level-col-header">
-          <span class="level-name">Unassigned</span>
-          <span class="level-count">${unassigned.length}</span>
+
+  const colHTML = (id, name, lvlStudents) => `
+    <div class="level-col" id="col-${id}">
+      <div class="level-col-header" onclick="toggleLevel('${id}')">
+        <span class="level-name">${esc(name)}</span>
+        <div class="level-header-right">
+          <span class="level-count">${lvlStudents.length}</span>
+          <span class="level-chevron">▼</span>
         </div>
-        <div class="level-students">${unassigned.map(s => studentCardHTML(s)).join('')}</div>
-      </div>`;
-  }
+      </div>
+      <div class="level-students">
+        ${lvlStudents.length
+          ? lvlStudents.map(s => studentCardHTML(s)).join('')
+          : '<div class="text-dim" style="font-size:0.8rem;padding:4px 2px;grid-column:1/-1">No students yet</div>'}
+      </div>
+    </div>`;
+
+  board.innerHTML =
+    levels.map(level => colHTML(level.id, level.name, students.filter(s => s.levelId === level.id))).join('') +
+    (unassigned.length ? colHTML('unassigned', 'Unassigned', unassigned) : '');
+}
+
+function toggleLevel(id) {
+  document.getElementById('col-' + id)?.classList.toggle('collapsed');
 }
 
 function studentCardHTML(s) {
