@@ -102,7 +102,7 @@
       <div class="text-dim">Manage your students and swim levels</div>
     </div>
     <div class="dash-actions">
-      <button class="btn btn-ghost btn-sm" onclick="openTab('levelsTab')">⚙ Manage Levels</button>
+      <button class="btn btn-ghost btn-sm hidden" id="manageLevelsBtn" onclick="openTab('levelsTab')">⚙ Manage Levels</button>
       <button class="btn btn-primary" onclick="openAddStudentModal()">+ Add Student</button>
     </div>
   </div>
@@ -110,7 +110,7 @@
   <!-- Tabs -->
   <div class="tabs">
     <div class="tab active" id="tab-studentsTab" onclick="openTab('studentsTab')">Students Board</div>
-    <div class="tab" id="tab-levelsTab" onclick="openTab('levelsTab')">Swim Levels</div>
+    <div class="tab hidden" id="tab-levelsTab" onclick="openTab('levelsTab')">Swim Levels</div>
   </div>
 
   <!-- Students Tab -->
@@ -123,9 +123,9 @@
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
       <div>
         <div style="font-family:'Playfair Display',serif; font-size:1.2rem; margin-bottom:4px;">Swim Levels</div>
-        <div class="text-dim">Drag to reorder · Click to edit</div>
+        <div class="text-dim" id="levelsTabSubtitle">Drag to reorder · Click to edit</div>
       </div>
-      <button class="btn btn-primary" onclick="openAddLevelModal()">+ Add Level</button>
+      <button class="btn btn-primary hidden" id="addLevelBtn" onclick="openAddLevelModal()">+ Add Level</button>
     </div>
     <div class="levels-list" id="levelsList"></div>
   </div>

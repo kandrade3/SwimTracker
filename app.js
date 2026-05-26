@@ -8,15 +8,13 @@
 // Replace these values with your own project's config.
 // Get them from: Firebase Console → Project Settings → Your Apps → Web App
 // ─────────────────────────────────────
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDL9-NhHzN25SAUG8VzfbXNf2CzY9wl4P0",
-  authDomain: "swimtrackr-27070.firebaseapp.com",
-  projectId: "swimtrackr-27070",
-  storageBucket: "swimtrackr-27070.firebasestorage.app",
-  messagingSenderId: "203011812234",
-  appId: "1:203011812234:web:7b94a23eeb3c2bfb73b673",
-  measurementId: "G-3SB34TWVVR"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 // Initialize Firebase
@@ -30,6 +28,14 @@ const db   = firebase.firestore();
 let currentUser   = null;   // Firebase user object
 let instructorDoc = null;   // Instructor's Firestore document data (name, levels, students)
 let activeStudentId = null;
+
+// ─────────────────────────────────────
+// ADMIN HELPER
+// Set isAdmin: true on an instructor's Firestore document to grant access.
+// ─────────────────────────────────────
+function isAdmin() {
+  return instructorDoc?.isAdmin === true;
+}
 
 // ─────────────────────────────────────
 // DEFAULT LEVELS (used on first register)
@@ -183,6 +189,16 @@ function showDashboard() {
   dash.style.display = 'flex';
   dash.style.flexDirection = 'column';
   document.getElementById('dashInstructorName').textContent = instructorDoc.name;
+
+  // Show admin-only controls
+  const admin = isAdmin();
+  document.getElementById('manageLevelsBtn').classList.toggle('hidden', !admin);
+  document.getElementById('tab-levelsTab').classList.toggle('hidden', !admin);
+  document.getElementById('addLevelBtn').classList.toggle('hidden', !admin);
+  document.getElementById('levelsTabSubtitle').textContent = admin
+    ? 'Drag to reorder · Click to edit'
+    : 'Current swim levels';
+
   openTab('studentsTab');
   renderBoard();
 }
@@ -261,28 +277,52 @@ function studentCardHTML(s) {
 function renderLevels() {
   const levels = instructorDoc.levels || [];
   const list   = document.getElementById('levelsList');
+  const admin  = isAdmin();
 
   if (!levels.length) {
-    list.innerHTML = '<div class="empty-board">No levels yet. Add your first swim level!</div>';
+    list.innerHTML = `<div class="empty-board">${admin ? 'No levels yet. Add your first swim level!' : 'No levels have been set up yet.'}</div>`;
     return;
   }
 
-  list.innerHTML = levels.map(level => `
-    <div class="level-item" draggable="true" data-id="${level.id}"
-         ondragstart="dragStart(event,'${level.id}')"
-         ondragover="dragOver(event)"
-         ondrop="drop(event,'${level.id}')"
-         ondragleave="dragLeave(event)">
-      <span class="drag-handle" title="Drag to reorder">⠿</span>
-      <div style="flex:1; min-width:0;">
-        <div class="level-item-name">${esc(level.name)}</div>
-        ${level.desc ? `<div class="level-item-desc">${esc(level.desc)}</div>` : ''}
-      </div>
-      <div class="level-actions">
-        <button class="btn btn-ghost btn-sm" onclick="openEditLevelModal('${level.id}')">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteLevel('${level.id}')">Delete</button>
-      </div>
-    </div>`).join('');
+  if (admin) {
+    // Full editable list with drag handles
+    list.innerHTML = levels.map(level => {
+      const skillCount = (level.skills || []).length;
+      return `
+        <div class="level-item" draggable="true" data-id="${level.id}"
+             ondragstart="dragStart(event,'${level.id}')"
+             ondragover="dragOver(event)"
+             ondrop="drop(event,'${level.id}')"
+             ondragleave="dragLeave(event)">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
+          <div style="flex:1; min-width:0;">
+            <div class="level-item-name">${esc(level.name)}</div>
+            ${level.desc ? `<div class="level-item-desc">${esc(level.desc)}</div>` : ''}
+            ${skillCount ? `<div class="level-item-desc" style="margin-top:3px;">🎯 ${skillCount} skill${skillCount !== 1 ? 's' : ''}</div>` : ''}
+          </div>
+          <div class="level-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEditLevelModal('${level.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteLevel('${level.id}')">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+  } else {
+    // Read-only: show levels and their skills, no controls
+    list.innerHTML = levels.map(level => {
+      const skills = level.skills || [];
+      return `
+        <div class="level-item" style="cursor:default;">
+          <div style="flex:1; min-width:0;">
+            <div class="level-item-name">${esc(level.name)}</div>
+            ${level.desc ? `<div class="level-item-desc">${esc(level.desc)}</div>` : ''}
+            ${skills.length ? `
+              <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;">
+                ${skills.map(sk => `<span class="comment-skill-tag">${esc(sk.name)}</span>`).join('')}
+              </div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
 }
 
 // ─────────────────────────────────────
@@ -304,6 +344,7 @@ function dragLeave(e) {
 async function drop(e, targetId) {
   e.preventDefault();
   document.querySelectorAll('.level-item').forEach(el => el.classList.remove('drag-over', 'dragging'));
+  if (!isAdmin()) { toast('Admin access required', true); return; }
   if (dragSrcId === targetId) return;
 
   const levels  = instructorDoc.levels;
@@ -325,6 +366,7 @@ async function drop(e, targetId) {
 let editingSkills = [];
 
 function openAddLevelModal() {
+  if (!isAdmin()) { toast('Admin access required', true); return; }
   document.getElementById('levelModalTitle').textContent = 'Add Level';
   document.getElementById('levelName').value  = '';
   document.getElementById('levelDesc').value  = '';
@@ -336,6 +378,7 @@ function openAddLevelModal() {
 }
 
 function openEditLevelModal(id) {
+  if (!isAdmin()) { toast('Admin access required', true); return; }
   const level = instructorDoc.levels.find(l => l.id === id);
   if (!level) return;
   document.getElementById('levelModalTitle').textContent = 'Edit Level';
@@ -377,6 +420,7 @@ function removeEditingSkill(index) {
 }
 
 async function saveLevel() {
+  if (!isAdmin()) { toast('Admin access required', true); return; }
   const name   = document.getElementById('levelName').value.trim();
   if (!name) { toast('Please enter a level name', true); return; }
   const desc   = document.getElementById('levelDesc').value.trim();
@@ -397,6 +441,7 @@ async function saveLevel() {
 }
 
 async function deleteLevel(id) {
+  if (!isAdmin()) { toast('Admin access required', true); return; }
   if (!confirm('Delete this level? Students in it will become unassigned.')) return;
   instructorDoc.levels = instructorDoc.levels.filter(l => l.id !== id);
   renderLevels();
