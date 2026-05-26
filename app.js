@@ -9,13 +9,12 @@
 // Get them from: Firebase Console → Project Settings → Your Apps → Web App
 // ─────────────────────────────────────
 const firebaseConfig = {
-  apiKey: "AIzaSyDqdqkO2t4CReWNlFoXHS1YxB80nEKV4WA",
-  authDomain: "swimtrackr-27070.firebaseapp.com",
-  projectId: "swimtrackr-27070",
-  storageBucket: "swimtrackr-27070.firebasestorage.app",
-  messagingSenderId: "203011812234",
-  appId: "1:203011812234:web:7b94a23eeb3c2bfb73b673",
-  measurementId: "G-3SB34TWVVR"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 // Initialize Firebase
@@ -319,11 +318,18 @@ async function drop(e, targetId) {
 // ─────────────────────────────────────
 // LEVELS — ADD / EDIT / DELETE
 // ─────────────────────────────────────
+
+// Temporary skills array used while the level modal is open
+let editingSkills = [];
+
 function openAddLevelModal() {
   document.getElementById('levelModalTitle').textContent = 'Add Level';
   document.getElementById('levelName').value  = '';
   document.getElementById('levelDesc').value  = '';
   document.getElementById('editingLevelId').value = '';
+  document.getElementById('newSkillInput').value  = '';
+  editingSkills = [];
+  renderEditingSkills();
   openModal('levelModal');
 }
 
@@ -334,7 +340,38 @@ function openEditLevelModal(id) {
   document.getElementById('levelName').value  = level.name;
   document.getElementById('levelDesc').value  = level.desc || '';
   document.getElementById('editingLevelId').value = id;
+  document.getElementById('newSkillInput').value  = '';
+  editingSkills = JSON.parse(JSON.stringify(level.skills || []));
+  renderEditingSkills();
   openModal('levelModal');
+}
+
+function renderEditingSkills() {
+  const list = document.getElementById('levelSkillsList');
+  if (!editingSkills.length) {
+    list.innerHTML = '<div class="skill-picker-empty" style="padding:4px 2px">No skills yet — add some below.</div>';
+    return;
+  }
+  list.innerHTML = editingSkills.map((sk, i) => `
+    <div class="skill-row">
+      <span>${esc(sk.name)}</span>
+      <button class="skill-delete" onclick="removeEditingSkill(${i})" title="Remove">×</button>
+    </div>`).join('');
+}
+
+function addSkillToLevel() {
+  const input = document.getElementById('newSkillInput');
+  const name  = input.value.trim();
+  if (!name) return;
+  editingSkills.push({ id: uid(), name });
+  input.value = '';
+  renderEditingSkills();
+  input.focus();
+}
+
+function removeEditingSkill(index) {
+  editingSkills.splice(index, 1);
+  renderEditingSkills();
 }
 
 async function saveLevel() {
@@ -345,9 +382,9 @@ async function saveLevel() {
 
   if (editId) {
     const lvl = instructorDoc.levels.find(l => l.id === editId);
-    if (lvl) { lvl.name = name; lvl.desc = desc; }
+    if (lvl) { lvl.name = name; lvl.desc = desc; lvl.skills = [...editingSkills]; }
   } else {
-    instructorDoc.levels.push({ id: uid(), name, desc });
+    instructorDoc.levels.push({ id: uid(), name, desc, skills: [...editingSkills] });
   }
 
   closeModal('levelModal');
@@ -411,7 +448,7 @@ function openStudentModal(studentId) {
   const lvl = instructorDoc.levels.find(l => l.id === student.levelId);
   document.getElementById('studentModalMeta').innerHTML = [
     student.age ? `<span class="level-badge">Age ${student.age}</span>` : '',
-    lvl         ? `<span class="level-badge">${esc(lvl.name)}</span>`  : ''
+    lvl         ? `<span class="level-badge">${esc(lvl.name)}</span>`   : ''
   ].join('');
 
   document.getElementById('studentLevelChange').innerHTML =
@@ -419,9 +456,32 @@ function openStudentModal(studentId) {
       `<option value="${l.id}" ${l.id === student.levelId ? 'selected' : ''}>${esc(l.name)}</option>`
     ).join('');
 
+  renderSkillPicker(lvl);
   renderComments(student);
   document.getElementById('newComment').value = '';
   openModal('studentModal');
+}
+
+function renderSkillPicker(level) {
+  const picker = document.getElementById('skillPicker');
+  const skills = level?.skills || [];
+  if (!skills.length) {
+    picker.innerHTML = '<div class="skill-picker-empty">No skills defined for this level yet.</div>';
+    return;
+  }
+  picker.innerHTML = skills.map(sk => `
+    <div class="skill-chip" id="chip-${sk.id}" onclick="toggleSkillChip('${sk.id}')">
+      ${esc(sk.name)}
+    </div>`).join('');
+}
+
+function toggleSkillChip(skillId) {
+  document.getElementById('chip-' + skillId)?.classList.toggle('selected');
+}
+
+function getSelectedSkills() {
+  return [...document.querySelectorAll('#skillPicker .skill-chip.selected')]
+    .map(el => el.textContent.trim().replace(/^✓\s*/, ''));
 }
 
 function renderComments(student) {
@@ -433,27 +493,45 @@ function renderComments(student) {
     list.innerHTML = '<div class="no-comments">No comments yet. Add progress notes below!</div>';
     return;
   }
-  list.innerHTML = [...comments].reverse().map(c => `
-    <div class="comment-item">
-      <div class="comment-date">${esc(c.date)}</div>
-      <div class="comment-text">${esc(c.text)}</div>
-      <div class="comment-footer">
-        <span></span>
-        <button class="btn btn-danger btn-sm" onclick="deleteComment('${c.id}')">Delete</button>
-      </div>
-    </div>`).join('');
+  list.innerHTML = [...comments].reverse().map(c => {
+    const skillTags = (c.skills || []).length
+      ? `<div class="comment-skills">${c.skills.map(s => `<span class="comment-skill-tag">${esc(s)}</span>`).join('')}</div>`
+      : '';
+    const noteText = c.text
+      ? `<div class="comment-text">${esc(c.text)}</div>`
+      : '';
+    return `
+      <div class="comment-item">
+        <div class="comment-date">${esc(c.date)}</div>
+        ${skillTags}
+        ${noteText}
+        <div class="comment-footer">
+          <span></span>
+          <button class="btn btn-danger btn-sm" onclick="deleteComment('${c.id}')">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 async function addComment() {
-  const text = document.getElementById('newComment').value.trim();
-  if (!text) { toast('Please write a comment first', true); return; }
+  const text   = document.getElementById('newComment').value.trim();
+  const skills = getSelectedSkills();
+
+  if (!text && !skills.length) {
+    toast('Add a note or select at least one skill', true);
+    return;
+  }
 
   const student = instructorDoc.students.find(s => s.id === activeStudentId);
   if (!student) return;
   student.comments = student.comments || [];
-  student.comments.push({ id: uid(), text, date: dateStr() });
+  student.comments.push({ id: uid(), text, skills, date: dateStr() });
 
+  // Reset form
   document.getElementById('newComment').value = '';
+  document.querySelectorAll('#skillPicker .skill-chip.selected')
+    .forEach(el => el.classList.remove('selected'));
+
   renderComments(student);
   renderBoard();
   await saveInstructorData();
@@ -481,9 +559,12 @@ async function changeStudentLevel() {
   const lvl = instructorDoc.levels.find(l => l.id === newLevelId);
   toast(`Moved to "${lvl?.name}"`);
 
+  // Refresh skill picker for the new level
+  renderSkillPicker(lvl);
+
   // Update badge in modal
-  const metaDiv  = document.getElementById('studentModalMeta');
-  const badges   = metaDiv.querySelectorAll('.level-badge');
+  const metaDiv = document.getElementById('studentModalMeta');
+  const badges  = metaDiv.querySelectorAll('.level-badge');
   if (badges.length > 1) badges[1].remove();
   if (lvl) metaDiv.insertAdjacentHTML('beforeend', `<span class="level-badge">${esc(lvl.name)}</span>`);
 }

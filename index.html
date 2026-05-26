@@ -180,8 +180,16 @@
       📝 Comments <span id="commentCount" class="comment-badge"></span>
     </div>
     <div class="comments-list" id="commentsList"></div>
+
+    <!-- New comment form -->
     <div class="field">
-      <label>Add a Comment</label>
+      <label>Skills Practiced</label>
+      <div class="skill-picker" id="skillPicker">
+        <div class="skill-picker-empty">No skills defined for this level yet.</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Comment / Notes</label>
       <textarea id="newComment" placeholder="Progress notes, observations, goals..."></textarea>
     </div>
     <div class="modal-actions">
@@ -205,8 +213,17 @@
     </div>
     <div class="field">
       <label>Description (optional)</label>
-      <textarea id="levelDesc" placeholder="What skills does this level cover?"></textarea>
+      <textarea id="levelDesc" placeholder="What skills does this level cover?" style="min-height:60px;"></textarea>
     </div>
+
+    <hr class="divider">
+    <div style="font-weight:600; margin-bottom:12px;">🎯 Skills for this Level</div>
+    <div class="skills-list" id="levelSkillsList"></div>
+    <div class="skill-add-row">
+      <input type="text" id="newSkillInput" placeholder="e.g. Freestyle kick, Breath control..." onkeydown="if(event.key==='Enter'){event.preventDefault();addSkillToLevel();}">
+      <button class="btn btn-ghost btn-sm" onclick="addSkillToLevel()">+ Add</button>
+    </div>
+
     <input type="hidden" id="editingLevelId">
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('levelModal')">Cancel</button>
