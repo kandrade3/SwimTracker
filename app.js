@@ -8,13 +8,15 @@
 // Replace these values with your own project's config.
 // Get them from: Firebase Console → Project Settings → Your Apps → Web App
 // ─────────────────────────────────────
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey: "AIzaSyDL9-NhHzN25SAUG8VzfbXNf2CzY9wl4P0",
+  authDomain: "swimtrackr-27070.firebaseapp.com",
+  projectId: "swimtrackr-27070",
+  storageBucket: "swimtrackr-27070.firebasestorage.app",
+  messagingSenderId: "203011812234",
+  appId: "1:203011812234:web:9a5d5477e97599a873b673",
+  measurementId: "G-VQ8DZSDXV7"
 };
 
 // Initialize Firebase
