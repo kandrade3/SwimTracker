@@ -8,15 +8,13 @@
 // Replace these values with your own project's config.
 // Get them from: Firebase Console → Project Settings → Your Apps → Web App
 // ─────────────────────────────────────
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDL9-NhHzN25SAUG8VzfbXNf2CzY9wl4P0",
-  authDomain: "swimtrackr-27070.firebaseapp.com",
-  projectId: "swimtrackr-27070",
-  storageBucket: "swimtrackr-27070.firebasestorage.app",
-  messagingSenderId: "203011812234",
-  appId: "1:203011812234:web:9a5d5477e97599a873b673",
-  measurementId: "G-VQ8DZSDXV7"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 // Initialize Firebase
@@ -101,25 +99,46 @@ async function saveInstructorData() {
 }
 
 // ─────────────────────────────────────
+// USERNAME → FAKE EMAIL CONVERSION
+// Firebase Auth requires an email. We silently convert the username to a
+// deterministic fake email that users never see.
+// ─────────────────────────────────────
+function usernameToEmail(username) {
+  return username.toLowerCase().replace(/[^a-z0-9._-]/g, '_') + '@swimtrack.app';
+}
+
+function validateUsername(username) {
+  if (!username)          return 'Please enter a username.';
+  if (username.length < 3) return 'Username must be at least 3 characters.';
+  if (username.length > 30) return 'Username must be 30 characters or fewer.';
+  if (!/^[a-zA-Z0-9._-]+$/.test(username)) return 'Username can only contain letters, numbers, dots, hyphens, and underscores.';
+  return null;
+}
+
+// ─────────────────────────────────────
 // AUTH — REGISTER
 // ─────────────────────────────────────
 async function register() {
   const name     = document.getElementById('regName').value.trim();
-  const email    = document.getElementById('regEmail').value.trim();
+  const username = document.getElementById('regUsername').value.trim();
   const password = document.getElementById('regPassword').value;
 
-  if (!name || !email || !password) { toast('Please fill in all fields', true); return; }
-  if (password.length < 6)          { toast('Password must be at least 6 characters', true); return; }
+  if (!name || !username || !password) { toast('Please fill in all fields', true); return; }
+  const usernameError = validateUsername(username);
+  if (usernameError) { toast(usernameError, true); return; }
+  if (password.length < 6) { toast('Password must be at least 6 characters', true); return; }
 
+  const fakeEmail = usernameToEmail(username);
   showLoading(true);
   try {
-    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    const cred = await auth.createUserWithEmailAndPassword(fakeEmail, password);
     currentUser = cred.user;
 
     // Create instructor document in Firestore
     instructorDoc = {
       name,
-      email,
+      username: username.toLowerCase(),
+      isAdmin:  false,
       levels:   JSON.parse(JSON.stringify(DEFAULT_LEVELS)),
       students: []
     };
@@ -137,14 +156,15 @@ async function register() {
 // AUTH — LOGIN
 // ─────────────────────────────────────
 async function login() {
-  const email    = document.getElementById('loginEmail').value.trim();
+  const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
 
-  if (!email || !password) { toast('Please enter your email and password', true); return; }
+  if (!username || !password) { toast('Please enter your username and password', true); return; }
 
+  const fakeEmail = usernameToEmail(username);
   showLoading(true);
   try {
-    await auth.signInWithEmailAndPassword(email, password);
+    await auth.signInWithEmailAndPassword(fakeEmail, password);
     // onAuthStateChanged handles the rest
   } catch (err) {
     toast(friendlyAuthError(err), true);
@@ -162,13 +182,13 @@ async function logout() {
 
 function friendlyAuthError(err) {
   const map = {
-    'auth/email-already-in-use':    'That email is already registered.',
-    'auth/invalid-email':           'Please enter a valid email address.',
-    'auth/weak-password':           'Password must be at least 6 characters.',
-    'auth/user-not-found':          'No account found with that email.',
-    'auth/wrong-password':          'Incorrect password.',
-    'auth/invalid-credential':      'Incorrect email or password.',
-    'auth/too-many-requests':       'Too many attempts. Please try again later.',
+    'auth/email-already-in-use':  'That username is already taken.',
+    'auth/invalid-email':         'Invalid username format.',
+    'auth/weak-password':         'Password must be at least 6 characters.',
+    'auth/user-not-found':        'No account found with that username.',
+    'auth/wrong-password':        'Incorrect password.',
+    'auth/invalid-credential':    'Incorrect username or password.',
+    'auth/too-many-requests':     'Too many attempts. Please try again later.',
   };
   return map[err.code] || err.message;
 }
